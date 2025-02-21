@@ -1,15 +1,15 @@
 local Physics = {
     -- Constants
-    GRAVITY = 2000,
+    GRAVITY = 2500,
     GROUND_Y = 500,
     
     -- Movement constants
     DEFAULT_ACCELERATION = 800,
     DEFAULT_DECELERATION = 1200,
     DEFAULT_MAX_SPEED = 800,
-    DEFAULT_JUMP_FORCE = -600,
-    DEFAULT_MAX_JUMP_FORCE = -700,
-    DEFAULT_SLOPE_ACCELERATION = 400,
+    DEFAULT_JUMP_FORCE = -500,
+    DEFAULT_MAX_JUMP_FORCE = -600,
+    DEFAULT_SLOPE_ACCELERATION = 600,
     
     -- Jump settings
     DEFAULT_MAX_JUMP_HOLD_TIME = 0.15
@@ -44,7 +44,11 @@ end
 
 function Physics:updateVerticalMovement(entity, dt)
     if not entity.isGrounded then
+        -- Apply gravity when in air
         entity.velocityY = entity.velocityY + self.GRAVITY * dt
+    else
+        -- Reset vertical velocity when grounded
+        entity.velocityY = 0
     end
     
     local nextX = entity.x + entity.velocityX * dt
@@ -72,20 +76,21 @@ function Physics:handleSlopeMovement(entity, angle, slopeType, dt)
         local slopeForce = math.abs(math.sin(angle)) * entity.slopeAcceleration
         
         if slopeType == "steep" then
-            slopeForce = slopeForce * 2
+            slopeForce = slopeForce * 1.5
         end
         
         entity.velocityX = entity.velocityX + (slopeForce * slopeDirection) * dt
         
         local slopeAngleY = math.cos(angle)
         entity.velocityY = math.abs(entity.velocityX) * slopeAngleY
-        entity.velocityY = entity.velocityY + (100 * slopeAngleY * dt)
+        entity.velocityY = math.min(entity.velocityY + (150 * slopeAngleY * dt), 800)
+        entity.isGrounded = true
     end
 end
 
 function Physics:checkGroundCollision(entity)
-    if entity.y > self.GROUND_Y then
-        entity.y = self.GROUND_Y
+    if entity.y > self.GROUND_Y - 5 then
+        entity.y = self.GROUND_Y - 5
         entity.velocityY = 0
         entity.isGrounded = true
         return true
