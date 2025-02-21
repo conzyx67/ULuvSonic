@@ -1,3 +1,5 @@
+local Physics = require('core.physics')
+
 local Player = {
     x = 100,
     y = 100,
@@ -6,15 +8,14 @@ local Player = {
     
     velocityX = 0,
     velocityY = 0,
-    acceleration = 800,
-    deceleration = 1200,
-    maxSpeed = 800,
-    jumpForce = -600,
-    maxJumpForce = -700,
+    acceleration = Physics.DEFAULT_ACCELERATION,
+    deceleration = Physics.DEFAULT_DECELERATION,
+    maxSpeed = Physics.DEFAULT_MAX_SPEED,
+    jumpForce = Physics.DEFAULT_JUMP_FORCE,
+    maxJumpForce = Physics.DEFAULT_MAX_JUMP_FORCE,
     jumpHoldTime = 0,
-    maxJumpHoldTime = 0.15,
-    gravity = 2000,
-    slopeAcceleration = 400,
+    maxJumpHoldTime = Physics.DEFAULT_MAX_JUMP_HOLD_TIME,
+    slopeAcceleration = Physics.DEFAULT_SLOPE_ACCELERATION,
     
     isGrounded = false,
     isRolling = false,
@@ -32,50 +33,19 @@ end
 function Player:update(dt)
     local input = love.keyboard.isDown('right') and 1 or (love.keyboard.isDown('left') and -1 or 0)
     
-    if input ~= 0 then
-        self.velocityX = self.velocityX + input * self.acceleration * dt
-        self.facingRight = input > 0
-    else
-        local currentSpeed = math.abs(self.velocityX)
-        local decel = math.max(currentSpeed * 4, self.deceleration) * dt
-        if math.abs(self.velocityX) <= decel then
-            self.velocityX = 0
-        else
-            self.velocityX = self.velocityX - (self.velocityX > 0 and decel or -decel)
-        end
-    end
-    
-    self.velocityX = math.min(math.max(self.velocityX, -self.maxSpeed), self.maxSpeed)
-    
-    if not self.isGrounded then
-        self.velocityY = self.velocityY + self.gravity * dt
-    end
-    
-    local nextX = self.x + self.velocityX * dt
-    local nextY = self.y + self.velocityY * dt
+    Physics:updateHorizontalMovement(self, input, dt)
+    local nextX, nextY = Physics:updateVerticalMovement(self, dt)
     
     self.x = nextX
     self.y = nextY
     
     self:updateAnimation(dt)
     
-    if self.y > 500 then
-        self.y = 500
-        self.velocityY = 0
-        self.isGrounded = true
-    end
+    Physics:checkGroundCollision(self)
 end
 
 function Player:jump()
-    if self.isGrounded then
-        self.velocityY = self.jumpForce
-        self.isGrounded = false
-        self.jumpHoldTime = 0
-    elseif self.jumpHoldTime < self.maxJumpHoldTime and self.velocityY < 0 then
-        local jumpBoost = (self.maxJumpForce - self.jumpForce) * (self.jumpHoldTime / self.maxJumpHoldTime)
-        self.velocityY = self.jumpForce + jumpBoost
-        self.jumpHoldTime = self.jumpHoldTime + love.timer.getDelta()
-    end
+    Physics:handleJump(self, love.timer.getDelta())
 end
 
 function Player:updateAnimation(dt)
