@@ -17,7 +17,17 @@ local Physics = {
 
 function Physics:updateHorizontalMovement(entity, input, dt)
     if input ~= 0 then
-        entity.velocityX = entity.velocityX + input * entity.acceleration * dt
+        -- Check if input direction is opposite to current movement
+        local isOppositeDirection = (input > 0 and entity.velocityX < 0) or (input < 0 and entity.velocityX > 0)
+        
+        if isOppositeDirection then
+            -- Apply stronger deceleration when moving in opposite direction
+            local oppositeDecel = entity.deceleration * 2 * dt
+            entity.velocityX = entity.velocityX + (input * oppositeDecel)
+        else
+            -- Normal acceleration
+            entity.velocityX = entity.velocityX + input * entity.acceleration * dt
+        end
         entity.facingRight = input > 0
     else
         local currentSpeed = math.abs(entity.velocityX)
